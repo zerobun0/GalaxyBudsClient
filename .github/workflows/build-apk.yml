@@ -19,7 +19,10 @@ jobs:
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android
 
-      - name: Restore dependencies
+      - name: Find Android project
+        run: find . -name "*.csproj" | xargs grep -l "android" -i | head -20
+
+      - name: Restore
         run: dotnet restore GalaxyBudsClient/GalaxyBudsClient.csproj
 
       - name: Build APK
@@ -28,12 +31,11 @@ jobs:
             -f net8.0-android \
             -c Release \
             -p:AndroidPackageFormats=apk \
-            -p:AndroidKeyStore=false \
-            --no-restore
+            -p:AndroidKeyStore=false
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: GalaxyBudsClient-APK
-          path: GalaxyBudsClient/bin/Release/net8.0-android/publish/*.apk
+          path: "**/bin/Release/net8.0-android/publish/*.apk"
           retention-days: 7
