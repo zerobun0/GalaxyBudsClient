@@ -8,34 +8,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android
 
-      - name: Find Android project
-        run: find . -name "*.csproj" | xargs grep -l "android" -i | head -20
+      - name: Find Android csproj
+        id: findproj
+        run: |
+          PROJ=$(grep -rl "net8.0-android\|net9.0-android" --include="*.csproj" . | head -1)
+          echo "Found: $PROJ"
+          echo "proj=$PROJ" >> $GITHUB_OUTPUT
 
       - name: Restore
-        run: dotnet restore GalaxyBudsClient/GalaxyBudsClient.csproj
+        run: dotnet restore "${{ steps.findproj.outputs.proj }}"
 
       - name: Build APK
         run: |
-          dotnet publish GalaxyBudsClient/GalaxyBudsClient.csproj \
-            -f net8.0-android \
+          dotnet publish "${{ steps.findproj.outputs.proj }}" \
             -c Release \
             -p:AndroidPackageFormats=apk \
             -p:AndroidKeyStore=false
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: GalaxyBudsClient-APK
-          path: "**/bin/Release/net8.0-android/publish/*.apk"
+          path: "**/bin/Release/**/*.apk"
           retention-days: 7
